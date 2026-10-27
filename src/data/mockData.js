@@ -23,8 +23,8 @@ export const followingIds = [
 ];
 
 export const followerIds = [
-  "u02", "u03", "u04", "u05", "u06", "u07",
-  "u08", "u09", "u10", "u11", "u12",
+  "u03", "u04", "u05", "u06", "u07", "u08",
+  "u09", "u10", "u11", "u12", "u13",
 ];
 
 export const tweets = [
