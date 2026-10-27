@@ -26,8 +26,10 @@ function FollowersPage() {
     <section>
       <div className="mb-4">
         <p className="text-primary fw-semibold mb-1">Tu comunidad</p>
-        <h1 className="h2 mb-1">Seguidores</h1>
-        <p className="text-secondary mb-0">{followerUsers.length} personas</p>
+            <h1 className="h2 text-white mb-1">Seguidores</h1>
+            <p className="text-white-50 mb-0">
+                {followerUsers.length} personas
+            </p>
       </div>
 
       {visibleUsers.length > 0 ? (
@@ -41,8 +43,8 @@ function FollowersPage() {
           />
         ))
       ) : (
-        <div className="alert alert-light border" role="status">
-          Todavía no tienes seguidores.
+        <div className="alert bg-dark text-white border-secondary" role="status">
+            Todavía no tienes seguidores.
         </div>
       )}
 

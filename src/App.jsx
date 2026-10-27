@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Link,
@@ -17,37 +18,49 @@ import UserTweetsPage from "./pages/UserTweetsPage";
 
 function PlaceholderPage({ title, description }) {
   return (
-    <section className="card border-0 shadow-sm">
-      <div className="card-body p-4 p-md-5">
-        <span className="badge rounded-pill text-bg-primary mb-3">
+    <section className="card bg-dark text-white border-secondary rounded-4">
+      <div className="card-body p-4">
+        <span className="badge text-bg-primary mb-3">
           Milestone 1
         </span>
-        <h1 className="h3 mb-2">{title}</h1>
-        <p className="text-secondary mb-0">{description}</p>
+        <h1 className="h3">{title}</h1>
+        <p>{description}</p>
       </div>
     </section>
   );
 }
 
 function PageLayout({ children }) {
-  return <main className="container py-4">{children}</main>;
+  return (
+    <main className="container-fluid px-0 py-4">
+      <div className="mx-auto px-3" style={{ maxWidth: "720px" }}>
+        {children}
+      </div>
+    </main>
+  );
 }
 
 function AppHeader() {
   const navLinkClass = ({ isActive }) =>
-    `nav-link px-0 ${
-      isActive ? "active fw-semibold text-primary" : "text-secondary"
+    `nav-link rounded-pill px-3 ${
+      isActive ? "active bg-secondary text-white" : "text-white-50"
     }`;
 
   return (
-    <header className="navbar bg-white border-bottom shadow-sm">
-      <div className="container d-flex flex-wrap justify-content-between gap-3">
-        <Link className="navbar-brand fw-bold text-primary me-2" to="/home">
-          Clon de X
+    <header className="navbar navbar-expand bg-black border-bottom border-secondary px-3 py-3">
+      <div className="container-fluid flex-wrap gap-3">
+        <Link
+          className="navbar-brand text-white fw-bold me-2"
+          to="/home"
+        >
+          <span className="border border-2 rounded-circle px-2 py-1 me-2">
+            X
+          </span>
+          Clon-X
         </Link>
 
         <nav
-          className="navbar-nav flex-row flex-wrap align-items-center gap-3"
+          className="navbar-nav flex-row flex-wrap gap-1"
           aria-label="Navegación principal"
         >
           <NavLink className={navLinkClass} to="/home">
@@ -65,8 +78,8 @@ function AppHeader() {
         </nav>
 
         <div className="d-flex align-items-center gap-3">
-          <span className="small fw-semibold">@oscar</span>
-          <Link className="btn btn-outline-secondary btn-sm" to="/login">
+          <span className="small fw-bold text-white">@Felipe</span>
+          <Link className="small text-white-50" to="/login">
             Cerrar sesión
           </Link>
         </div>
@@ -78,7 +91,7 @@ function AppHeader() {
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-vh-100 bg-light">
+      <div className="container-fluid min-vh-100 bg-black text-white p-0">
         <AppHeader />
 
         <Routes>
@@ -88,56 +101,27 @@ function App() {
 
           <Route
             path="/home"
-            element={
-              <PageLayout>
-                <HomePage />
-              </PageLayout>
-            }
+            element={<PageLayout><HomePage /></PageLayout>}
           />
-
           <Route
             path="/compose"
-            element={
-              <PageLayout>
-                <ComposePage />
-              </PageLayout>
-            }
+            element={<PageLayout><ComposePage /></PageLayout>}
           />
-
           <Route
             path="/feed"
-            element={
-              <PageLayout>
-                <FeedPage />
-              </PageLayout>
-            }
+            element={<PageLayout><FeedPage /></PageLayout>}
           />
-
           <Route
             path="/following"
-            element={
-              <PageLayout>
-                <FollowingPage />
-              </PageLayout>
-            }
+            element={<PageLayout><FollowingPage /></PageLayout>}
           />
-
           <Route
             path="/followers"
-            element={
-              <PageLayout>
-                <FollowersPage />
-              </PageLayout>
-            }
+            element={<PageLayout><FollowersPage /></PageLayout>}
           />
-
           <Route
             path="/users/:username"
-            element={
-              <PageLayout>
-                <UserTweetsPage />
-              </PageLayout>
-            }
+            element={<PageLayout><UserTweetsPage /></PageLayout>}
           />
 
           <Route
