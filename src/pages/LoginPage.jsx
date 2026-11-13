@@ -1,120 +1,111 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { loginUser } from "../auth";
+import { loginUser, loginWithGoogle } from "../auth";
 
 function LoginPage() {
   const navigate = useNavigate();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
-
-    const username = formData.get("username");
-    const password = formData.get("password");
-
-    const result = loginUser(username, password);
-
-    if (!result.success) {
-      setError(result.message);
-      return;
-    }
-
     setError("");
-    navigate("/home");
+    setLoading(true);
+
+    const result = await loginUser(username, password);
+
+    setLoading(false);
+
+    if (result.success) {
+      navigate("/home");
+    } else {
+      setError(result.message);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError("");
+    setLoading(true);
+
+    const result = await loginWithGoogle();
+
+    setLoading(false);
+
+    if (result.success) {
+      navigate("/home");
+    } else {
+      setError(result.message);
+    }
   }
 
   return (
-    <main className="container py-5">
+    <div className="container mt-5">
       <div className="row justify-content-center">
-        <div className="col-12 col-md-8 col-lg-6">
-          <section className="card border-0 shadow-sm">
-            <div className="card-body p-4 p-md-5">
-              <div className="text-center mb-4">
-                <span className="badge rounded-pill text-bg-primary mb-3">
-                  Clon de X
-                </span>
+        <div className="col-md-6 col-lg-5">
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+              <h2 className="text-center mb-4">Iniciar sesión en Clon-X</h2>
 
-                <h1 className="h3 mb-2">Iniciar sesión</h1>
-
-                <p className="text-secondary mb-0">
-                  Vuelve a conectarte con la comunidad.
-                </p>
-              </div>
+              {error && (
+                <div className="alert alert-danger">
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label" htmlFor="username">
-                    Nombre de usuario
-                  </label>
-
+                  <label className="form-label">Nombre de usuario</label>
                   <input
-                    className="form-control"
-                    id="username"
-                    name="username"
                     type="text"
-                    autoComplete="username"
-                    placeholder="Escribe tu nombre de usuario"
-                    required
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label" htmlFor="password">
-                    Contraseña
-                  </label>
-
-                  <input
                     className="form-control"
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Escribe tu contraseña"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
                     required
                   />
                 </div>
 
-                {error && (
-                  <div className="alert alert-danger" role="alert">
-                    {error}
-                  </div>
-                )}
+                <div className="mb-3">
+                  <label className="form-label">Contraseña</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                  />
+                </div>
 
-                <button className="btn btn-primary w-100" type="submit">
-                  Iniciar sesión
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100"
+                  disabled={loading}
+                >
+                  {loading ? "Ingresando..." : "Iniciar sesión"}
                 </button>
               </form>
 
-              <div className="d-flex align-items-center gap-3 my-4">
-                <hr className="flex-grow-1" />
-                <span className="small text-secondary">
-                  o continúa con
-                </span>
-                <hr className="flex-grow-1" />
-              </div>
+              <div className="text-center my-3">o</div>
 
               <button
-                className="btn btn-outline-secondary w-100"
                 type="button"
-                disabled
+                className="btn btn-outline-dark w-100"
+                onClick={handleGoogleLogin}
+                disabled={loading}
               >
                 Continuar con Google
               </button>
 
-              <p className="text-center text-secondary mt-4 mb-0">
-                ¿Todavía no tienes cuenta?{" "}
-                <Link className="text-decoration-none" to="/register">
-                  Regístrate
-                </Link>
+              <p className="text-center mt-3 mb-0">
+                ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
               </p>
             </div>
-          </section>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
