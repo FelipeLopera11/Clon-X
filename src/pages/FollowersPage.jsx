@@ -1,56 +1,90 @@
-import { useState } from "react";
-import {
-  currentUserId,
-  followerIds,
-  followingIds,
-  users,
-} from "../data/mockData";
+
+import { useEffect, useState } from "react";
+import { getFollowerUsers, isFollowing } from "../social";
 import Pagination, { PAGE_SIZE } from "../components/Pagination";
 import UserCard from "../components/UserCard";
 
-function FollowersPage() {
+function FollowersPage({ currentUser }) {
+  const [users, setUsers] = useState([]);
+  const [followingIds, setFollowingIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const followerUsers = users
-    .filter((user) => followerIds.includes(user.id))
-    .sort((firstUser, secondUser) =>
-      firstUser.fullName.localeCompare(secondUser.fullName, "es", {
-        sensitivity: "base",
-      }),
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const followers = await getFollowerUsers(currentUser.uid);
+
+        const followingResults = await Promise.all(
+          followers.map(async (user) => ({
+            id: user.id,
+            following: await isFollowing(currentUser.uid, user.id),
+          }))
+        );
+
+        followers.sort((a, b) =>
+          a.fullName.localeCompare(b.fullName, "es")
+        );
+
+        setUsers(followers);
+        setFollowingIds(
+          followingResults
+            .filter((item) => item.following)
+            .map((item) => item.id)
+        );
+      } catch (err) {
+        console.error(err);
+        setError("No se pudieron cargar los seguidores.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUsers();
+  }, [currentUser.uid]);
+
+  function handleFollowChange(userId, following) {
+    setFollowingIds((previous) =>
+      following
+        ? [...previous, userId]
+        : previous.filter((id) => id !== userId)
     );
+  }
 
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const visibleUsers = followerUsers.slice(startIndex, startIndex + PAGE_SIZE);
+  const visibleUsers = users.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <section>
       <div className="mb-4">
         <p className="text-primary fw-semibold mb-1">Tu comunidad</p>
-            <h1 className="h2 text-white mb-1">Seguidores</h1>
-            <p className="text-white-50 mb-0">
-                {followerUsers.length} personas
-            </p>
+        <h1 className="h2 mb-1">Seguidores</h1>
+        <p className="text-secondary mb-0">{users.length} personas</p>
       </div>
 
-      {visibleUsers.length > 0 ? (
-        visibleUsers.map((user) => (
-          <UserCard
-            key={user.id}
-            user={user}
-            showFollowButton={
-              user.id !== currentUserId && !followingIds.includes(user.id)
-            }
-          />
-        ))
-      ) : (
-        <div className="alert bg-dark text-white border-secondary" role="status">
-            Todavía no tienes seguidores.
+      {loading && <p>Cargando seguidores...</p>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {!loading && !error && users.length === 0 && (
+        <div className="alert alert-light border">
+          Todavía no tienes seguidores.
         </div>
       )}
 
+      {visibleUsers.map((user) => (
+        <UserCard
+          key={user.id}
+          user={user}
+          currentUser={currentUser}
+          isFollowing={followingIds.includes(user.id)}
+          onFollowChange={handleFollowChange}
+        />
+      ))}
+
       <Pagination
         currentPage={currentPage}
-        totalItems={followerUsers.length}
+        totalItems={users.length}
         onPageChange={setCurrentPage}
       />
     </section>
