@@ -139,6 +139,7 @@ function FeedPage({ currentUser }) {
               key={tweet.id}
               tweet={tweet}
               user={author}
+              currentUser={currentUser}
             />
           );
         })}
