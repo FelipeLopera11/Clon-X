@@ -1,5 +1,6 @@
 
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -8,9 +9,14 @@ import {
   where,
   runTransaction,
   increment,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { db } from "./firebase";
+
+// ========================================
+// SEGUIDORES
+// ========================================
 
 export async function followUser(currentUserId, targetUserId) {
   if (!currentUserId || !targetUserId || currentUserId === targetUserId) {
@@ -41,12 +47,12 @@ export async function followUser(currentUserId, targetUserId) {
 
     transaction.set(followingRef, {
       uid: targetUserId,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(),
     });
 
     transaction.set(followerRef, {
       uid: currentUserId,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(),
     });
 
     transaction.update(currentRef, {
@@ -89,6 +95,10 @@ export async function unfollowUser(currentUserId, targetUserId) {
   });
 }
 
+// ========================================
+// LISTAS DE USUARIOS
+// ========================================
+
 export async function getUsersByIds(ids) {
   const results = await Promise.all(
     ids.map(async (id) => {
@@ -119,6 +129,10 @@ export async function getFollowerUsers(userId) {
   return getUsersByIds(snapshot.docs.map((item) => item.id));
 }
 
+// ========================================
+// BUSCAR USUARIOS
+// ========================================
+
 export async function searchUserByUsername(username) {
   const normalized = username.trim().replace(/^@/, "").toLowerCase();
 
@@ -145,4 +159,92 @@ export async function isFollowing(currentUserId, targetUserId) {
 
   const snapshot = await getDoc(reference);
   return snapshot.exists();
+}
+
+// ========================================
+// LIKES
+// ========================================
+
+export async function toggleTweetLike(tweetId, userId) {
+  if (!tweetId || !userId) {
+    throw new Error("Falta información para dar Me gusta.");
+  }
+
+  const tweetRef = doc(db, "tweets", tweetId);
+  const likeRef = doc(db, "tweets", tweetId, "likes", userId);
+
+  return await runTransaction(db, async (transaction) => {
+    const likeSnapshot = await transaction.get(likeRef);
+    const tweetSnapshot = await transaction.get(tweetRef);
+
+    if (!tweetSnapshot.exists()) {
+      throw new Error("La publicación no existe.");
+    }
+
+    if (likeSnapshot.exists()) {
+      transaction.delete(likeRef);
+      transaction.update(tweetRef, {
+        likesCount: increment(-1),
+      });
+
+      return false;
+    }
+
+    transaction.set(likeRef, {
+      userId,
+      createdAt: serverTimestamp(),
+    });
+
+    transaction.update(tweetRef, {
+      likesCount: increment(1),
+    });
+
+    return true;
+  });
+}
+
+export async function hasLikedTweet(tweetId, userId) {
+  if (!tweetId || !userId) return false;
+
+  const likeRef = doc(db, "tweets", tweetId, "likes", userId);
+  const snapshot = await getDoc(likeRef);
+
+  return snapshot.exists();
+}
+
+// ========================================
+// COMPARTIR / REPUBLICAR
+// ========================================
+
+export async function shareTweet(currentUser, originalTweet, comment = "") {
+  if (!currentUser?.uid || !originalTweet?.id) {
+    throw new Error("No se pudo identificar la publicación.");
+  }
+
+  const sharedTweet = {
+    originalTweetId: originalTweet.id,
+    originalAuthorId: originalTweet.authorId,
+    content: originalTweet.content || "",
+    fullName: originalTweet.fullName || "Usuario desconocido",
+    username: originalTweet.username || "usuario",
+    photoURL: originalTweet.photoURL || "",
+    createdAt: originalTweet.createdAt || null,
+  };
+
+  const newTweet = {
+    authorId: currentUser.uid,
+    fullName: currentUser.fullName || currentUser.displayName || "Usuario",
+    username: currentUser.username || "usuario",
+    photoURL: currentUser.photoURL || "",
+    content: comment.trim(),
+    sharedTweetId: originalTweet.id,
+    sharedTweet,
+    isShare: true,
+    likesCount: 0,
+    createdAt: serverTimestamp(),
+  };
+
+  const reference = await addDoc(collection(db, "tweets"), newTweet);
+
+  return reference.id;
 }

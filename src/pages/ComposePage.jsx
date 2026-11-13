@@ -40,6 +40,7 @@ function ComposePage({ currentUser }) {
         fullName: currentUser.fullName,
         username: currentUser.username,
         photoURL: currentUser.photoURL || "",
+        likesCount: 0,
         createdAt: serverTimestamp(),
       });
 
@@ -93,7 +94,7 @@ function ComposePage({ currentUser }) {
               </div>
 
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <span className={content.length > 280 ? "text-danger" : "text-secondary"}>
+                <span className="text-secondary">
                   {content.length}/280 caracteres
                 </span>
               </div>
