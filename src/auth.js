@@ -1,118 +1,228 @@
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  deleteUser,
+} from "firebase/auth";
 
-const USERS_KEY = "clonx_users";
-const SESSION_KEY = "clonx_session";
+import {
+  doc,
+  getDoc,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/firestore";
 
-// Obtener los usuarios registrados
-export function getUsers() {
+import { auth, db, googleProvider } from "./firebase";
+
+function normalizeUsername(username) {
+  return username.trim().replace(/^@/, "").toLowerCase();
+}
+
+function getErrorMessage(error) {
+  const messages = {
+    "auth/email-already-in-use": "Este correo ya está registrado.",
+    "auth/invalid-email": "El correo electrónico no es válido.",
+    "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+    "auth/invalid-credential": "Usuario o contraseña incorrectos.",
+    "auth/popup-closed-by-user": "Cerraste la ventana de Google.",
+    "auth/cancelled-popup-request": "La solicitud de Google fue cancelada.",
+    USERNAME_TAKEN: "Este nombre de usuario ya está ocupado.",
+  };
+
+  return messages[error.code] || error.message || "Ocurrió un error.";
+}
+
+export async function registerUser(userData) {
+  let credential = null;
+
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
+    const username = normalizeUsername(userData.username);
+
+    if (!username) {
+      return { success: false, message: "Escribe un nombre de usuario." };
+    }
+
+    credential = await createUserWithEmailAndPassword(
+      auth,
+      userData.email.trim(),
+      userData.password
+    );
+
+    const user = credential.user;
+
+    await runTransaction(db, async (transaction) => {
+      const usernameRef = doc(db, "usernames", username);
+      const userRef = doc(db, "users", user.uid);
+
+      const usernameSnapshot = await transaction.get(usernameRef);
+
+      if (usernameSnapshot.exists()) {
+        throw new Error("USERNAME_TAKEN");
+      }
+
+      transaction.set(userRef, {
+        uid: user.uid,
+        fullName: userData.fullName.trim(),
+        username,
+        email: user.email,
+        photoURL: "",
+        followersCount: 0,
+        followingCount: 0,
+        createdAt: serverTimestamp(),
+      });
+
+      transaction.set(usernameRef, {
+        uid: user.uid,
+        email: user.email,
+      });
+    });
+
+    return {
+      success: true,
+      message: "Cuenta creada correctamente.",
+    };
+  } catch (error) {
+    if (credential?.user) {
+      try {
+        await deleteUser(credential.user);
+      } catch (deleteError) {
+        console.error(deleteError);
+      }
+    }
+
+    return {
+      success: false,
+      message: getErrorMessage(error),
+    };
   }
 }
 
-// Obtener el usuario con sesión activa
-export function getCurrentUser() {
+export async function loginUser(username, password) {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-  } catch {
-    return null;
+    const normalizedUsername = normalizeUsername(username);
+
+    const usernameRef = doc(db, "usernames", normalizedUsername);
+    const usernameSnapshot = await getDoc(usernameRef);
+
+    if (!usernameSnapshot.exists()) {
+      return {
+        success: false,
+        message: "El nombre de usuario no existe.",
+      };
+    }
+
+    const email = usernameSnapshot.data().email;
+
+    await signInWithEmailAndPassword(auth, email, password);
+
+    return {
+      success: true,
+      message: "Inicio de sesión correcto.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: getErrorMessage(error),
+    };
   }
 }
 
-// Registrar un nuevo usuario
-export function registerUser(userData) {
-  const users = getUsers();
+export async function loginWithGoogle() {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
 
-  const email = userData.email.trim().toLowerCase();
-  const username = userData.username.trim().replace(/^@/, "");
+    const userRef = doc(db, "users", user.uid);
+    const userSnapshot = await getDoc(userRef);
 
-  const emailExists = users.some(
-    (user) => user.email.toLowerCase() === email
-  );
+    if (!userSnapshot.exists()) {
+      const emailPrefix = user.email
+        .split("@")[0]
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "");
 
-  if (emailExists) {
+      const username = `${emailPrefix}_${user.uid.slice(0, 6)}`;
+
+      await runTransaction(db, async (transaction) => {
+        const usernameRef = doc(db, "usernames", username);
+        const usernameSnapshot = await transaction.get(usernameRef);
+
+        if (usernameSnapshot.exists()) {
+          throw new Error("USERNAME_TAKEN");
+        }
+
+        transaction.set(userRef, {
+          uid: user.uid,
+          fullName: user.displayName || "Usuario",
+          username,
+          email: user.email,
+          photoURL: user.photoURL || "",
+          followersCount: 0,
+          followingCount: 0,
+          createdAt: serverTimestamp(),
+        });
+
+        transaction.set(usernameRef, {
+          uid: user.uid,
+          email: user.email,
+        });
+      });
+    }
+
+    return {
+      success: true,
+      message: "Inicio de sesión con Google correcto.",
+    };
+  } catch (error) {
     return {
       success: false,
-      message: "Este correo electrónico ya está registrado.",
+      message: getErrorMessage(error),
     };
   }
-
-  const usernameExists = users.some(
-    (user) => user.username.toLowerCase() === username.toLowerCase()
-  );
-
-  if (usernameExists) {
-    return {
-      success: false,
-      message: "Este nombre de usuario ya está registrado.",
-    };
-  }
-
-  const newUser = {
-    id: Date.now(),
-    fullName: userData.fullName.trim(),
-    username,
-    email,
-    password: userData.password,
-  };
-
-  users.push(newUser);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-  const session = {
-    id: newUser.id,
-    fullName: newUser.fullName,
-    username: newUser.username,
-    email: newUser.email,
-  };
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  window.dispatchEvent(new Event("clonx-auth-change"));
-
-  return {
-    success: true,
-    user: session,
-  };
 }
 
-// Iniciar sesión
-export function loginUser(username, password) {
-  const users = getUsers();
+export function subscribeToAuthChanges(callback) {
+  return onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      callback(null);
+      return;
+    }
 
-  const normalizedUsername = username.trim().replace(/^@/, "").toLowerCase();
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userSnapshot = await getDoc(userRef);
 
-  const user = users.find(
-    (user) =>
-      user.username.toLowerCase() === normalizedUsername &&
-      user.password === password
-  );
-
-  if (!user) {
-    return {
-      success: false,
-      message: "Nombre de usuario o contraseña incorrectos.",
-    };
-  }
-
-  const session = {
-    id: user.id,
-    fullName: user.fullName,
-    username: user.username,
-    email: user.email,
-  };
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  window.dispatchEvent(new Event("clonx-auth-change"));
-
-  return {
-    success: true,
-    user: session,
-  };
+      if (userSnapshot.exists()) {
+        callback({
+          ...userSnapshot.data(),
+          uid: user.uid,
+        });
+      } else {
+        callback({
+          uid: user.uid,
+          fullName: user.displayName || "Usuario",
+          email: user.email,
+          photoURL: user.photoURL || "",
+          username: user.email?.split("@")[0] || "usuario",
+        });
+      }
+    } catch (error) {
+      console.error("Error al obtener el perfil:", error);
+      callback(null);
+    }
+  });
 }
 
-// Cerrar sesión
-export function logoutUser() {
-  localStorage.removeItem(SESSION_KEY);
-  window.dispatchEvent(new Event("clonx-auth-change"));
+export async function logoutUser() {
+  try {
+    await signOut(auth);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: getErrorMessage(error),
+    };
+  }
 }

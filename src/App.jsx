@@ -20,11 +20,10 @@ import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 
 import {
-  getCurrentUser,
+  subscribeToAuthChanges,
   logoutUser,
 } from "./auth";
 
-// Ruta para usuarios que no han iniciado sesión
 function GuestRoute({ currentUser, children }) {
   if (currentUser) {
     return <Navigate to="/home" replace />;
@@ -33,7 +32,6 @@ function GuestRoute({ currentUser, children }) {
   return children;
 }
 
-// Ruta para usuarios autenticados
 function ProtectedRoute({ currentUser, children }) {
   if (!currentUser) {
     return <Navigate to="/register" replace />;
@@ -42,7 +40,6 @@ function ProtectedRoute({ currentUser, children }) {
   return children;
 }
 
-// Página provisional
 function PlaceholderPage({ title, description }) {
   return (
     <section className="container py-5">
@@ -56,22 +53,20 @@ function PlaceholderPage({ title, description }) {
   );
 }
 
-// Diseño de las páginas
 function PageLayout({ children }) {
-  return (
-    <main className="container py-4">
-      {children}
-    </main>
-  );
+  return <main className="container py-4">{children}</main>;
 }
 
-// Encabezado de la aplicación
 function AppHeader({ currentUser }) {
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logoutUser();
-    navigate("/register");
+  async function handleLogout() {
+    try {
+      await logoutUser();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   }
 
   return (
@@ -122,42 +117,39 @@ function AppHeader({ currentUser }) {
   );
 }
 
-// Contenido principal y rutas
 function AppContent() {
-  const [currentUser, setCurrentUser] = useState(getCurrentUser);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    function updateUser() {
-      setCurrentUser(getCurrentUser());
-    }
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
 
-    window.addEventListener("clonx-auth-change", updateUser);
-
-    return () => {
-      window.removeEventListener("clonx-auth-change", updateUser);
-    };
+    return unsubscribe;
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-vh-100 bg-black text-white d-flex align-items-center justify-content-center">
+        Cargando Clon-X...
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid min-vh-100 bg-black text-white p-0">
-
-      {currentUser && (
-        <AppHeader currentUser={currentUser} />
-      )}
+      {currentUser && <AppHeader currentUser={currentUser} />}
 
       <Routes>
-        {/* Ruta principal */}
         <Route
           path="/"
           element={
-            <Navigate
-              to={currentUser ? "/home" : "/register"}
-              replace
-            />
+            <Navigate to={currentUser ? "/home" : "/register"} replace />
           }
         />
 
-        {/* Registro */}
         <Route
           path="/register"
           element={
@@ -167,7 +159,6 @@ function AppContent() {
           }
         />
 
-        {/* Inicio de sesión */}
         <Route
           path="/login"
           element={
@@ -177,79 +168,60 @@ function AppContent() {
           }
         />
 
-        {/* Inicio */}
         <Route
           path="/home"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <HomePage />
-              </PageLayout>
+              <PageLayout><HomePage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Publicar */}
         <Route
           path="/compose"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <ComposePage />
-              </PageLayout>
+              <PageLayout><ComposePage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Feed */}
         <Route
           path="/feed"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <FeedPage />
-              </PageLayout>
+              <PageLayout><FeedPage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Seguidos */}
         <Route
           path="/following"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <FollowingPage />
-              </PageLayout>
+              <PageLayout><FollowingPage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Seguidores */}
         <Route
           path="/followers"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <FollowersPage />
-              </PageLayout>
+              <PageLayout><FollowersPage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Tweets de un usuario */}
         <Route
           path="/users/:username"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout>
-                <UserTweetsPage />
-              </PageLayout>
+              <PageLayout><UserTweetsPage /></PageLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Página no encontrada */}
         <Route
           path="*"
           element={
