@@ -8,42 +8,91 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase";
+import { getFollowingUsers } from "../social";
 import Pagination, { PAGE_SIZE } from "../components/Pagination";
 import TweetCard from "../components/TweetCard";
 
-function FeedPage() {
+function FeedPage({ currentUser }) {
   const [tweets, setTweets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const tweetsQuery = query(
-      collection(db, "tweets"),
-      orderBy("createdAt", "desc")
-    );
+    if (!currentUser?.uid) return;
 
-    const unsubscribe = onSnapshot(
-      tweetsQuery,
-      (snapshot) => {
-        const loadedTweets = snapshot.docs.map((document) => ({
-          id: document.id,
-          ...document.data(),
-        }));
+    let active = true;
+    let unsubscribeTweets = null;
 
-        setTweets(loadedTweets);
-        setLoading(false);
+    async function loadFeed() {
+      try {
+        setLoading(true);
         setError("");
-      },
-      (firebaseError) => {
-        console.error("Error al cargar publicaciones:", firebaseError);
-        setError("No se pudieron cargar las publicaciones.");
-        setLoading(false);
-      }
-    );
 
-    return unsubscribe;
-  }, []);
+        const followingUsers = await getFollowingUsers(currentUser.uid);
+
+        if (!active) return;
+
+        const allowedUserIds = [
+          currentUser.uid,
+          ...followingUsers.map((user) => user.uid || user.id),
+        ];
+
+        const tweetsQuery = query(
+          collection(db, "tweets"),
+          orderBy("createdAt", "desc")
+        );
+
+        unsubscribeTweets = onSnapshot(
+          tweetsQuery,
+          (snapshot) => {
+            if (!active) return;
+
+            const loadedTweets = snapshot.docs
+              .map((document) => ({
+                id: document.id,
+                ...document.data(),
+              }))
+              .filter((tweet) =>
+                allowedUserIds.includes(tweet.authorId)
+              );
+
+            setTweets(loadedTweets);
+            setCurrentPage(1);
+            setLoading(false);
+            setError("");
+          },
+          (firebaseError) => {
+            console.error("Error al cargar publicaciones:", firebaseError);
+
+            if (active) {
+              setError("No se pudieron cargar las publicaciones.");
+              setLoading(false);
+            }
+          }
+        );
+      } catch (firebaseError) {
+        console.error("Error al cargar el feed:", firebaseError);
+
+        if (active) {
+          setError(
+            "No se pudieron cargar los usuarios seguidos. Revisa los permisos de Firebase."
+          );
+          setLoading(false);
+        }
+      }
+    }
+
+    loadFeed();
+
+    return () => {
+      active = false;
+
+      if (unsubscribeTweets) {
+        unsubscribeTweets();
+      }
+    };
+  }, [currentUser?.uid]);
 
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const visibleTweets = tweets.slice(startIndex, startIndex + PAGE_SIZE);
@@ -54,11 +103,14 @@ function FeedPage() {
         <p className="text-primary fw-semibold mb-1">
           Lo último de tu comunidad
         </p>
+
         <h1 className="h2 mb-0">Feed</h1>
       </div>
 
       {loading && (
-        <p className="text-secondary">Cargando publicaciones...</p>
+        <p className="text-secondary">
+          Cargando publicaciones...
+        </p>
       )}
 
       {error && (
@@ -69,7 +121,8 @@ function FeedPage() {
 
       {!loading && !error && tweets.length === 0 && (
         <div className="alert alert-light border" role="status">
-          Todavía no hay publicaciones. ¡Sé el primero en publicar!
+          Todavía no hay publicaciones de las personas que sigues.
+          ¡Publica algo o sigue a otros usuarios!
         </div>
       )}
 

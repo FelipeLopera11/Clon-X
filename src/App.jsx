@@ -25,6 +25,8 @@ import {
   logoutUser,
 } from "./auth";
 
+import { searchUserByUsername } from "./social";
+
 function GuestRoute({ currentUser, children }) {
   if (currentUser) {
     return <Navigate to="/home" replace />;
@@ -66,6 +68,41 @@ function PageLayout({ children }) {
 
 function AppHeader({ currentUser }) {
   const navigate = useNavigate();
+
+  const [search, setSearch] = useState("");
+  const [searchError, setSearchError] = useState("");
+  const [searching, setSearching] = useState(false);
+
+  async function handleSearch(event) {
+    event.preventDefault();
+
+    const username = search.trim().replace(/^@/, "");
+
+    if (!username) {
+      setSearchError("Escribe un nombre de usuario.");
+      return;
+    }
+
+    try {
+      setSearching(true);
+      setSearchError("");
+
+      const user = await searchUserByUsername(username);
+
+      if (!user) {
+        setSearchError("No se encontró ese usuario.");
+        return;
+      }
+
+      setSearch("");
+      navigate(`/users/${user.username}`);
+    } catch (error) {
+      console.error("Error al buscar usuario:", error);
+      setSearchError("No se pudo realizar la búsqueda.");
+    } finally {
+      setSearching(false);
+    }
+  }
 
   async function handleLogout() {
     try {
@@ -130,6 +167,37 @@ function AppHeader({ currentUser }) {
             Seguidores
           </NavLink>
 
+          {/* Buscador de usuarios */}
+          <form
+            onSubmit={handleSearch}
+            className="d-flex gap-1"
+            role="search"
+          >
+            <input
+              type="search"
+              className="form-control form-control-sm"
+              placeholder="Buscar @usuario"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label="Buscar usuario"
+              style={{ width: "150px" }}
+            />
+
+            <button
+              type="submit"
+              className="btn btn-outline-info btn-sm"
+              title="Buscar usuario"
+              aria-label="Buscar"
+              disabled={searching}
+            >
+              {searching ? (
+                <span className="spinner-border spinner-border-sm" />
+              ) : (
+                <span>🔍</span>
+              )}
+            </button>
+          </form>
+
           <span className="text-info">
             @{currentUser.username}
           </span>
@@ -143,6 +211,13 @@ function AppHeader({ currentUser }) {
           </button>
 
         </div>
+
+        {searchError && (
+          <p className="text-warning small w-100 mb-0">
+            {searchError}
+          </p>
+        )}
+
       </nav>
     </header>
   );
