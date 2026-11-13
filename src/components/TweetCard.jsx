@@ -1,12 +1,20 @@
+
 import { Link } from "react-router";
 
 function TweetCard({ tweet, user }) {
   const fullName = user?.fullName ?? "Usuario desconocido";
   const username = user?.username ?? "usuario";
-  const publishedAt = new Intl.DateTimeFormat("es-CO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(tweet.createdAt));
+
+  const date = tweet.createdAt?.toDate
+    ? tweet.createdAt.toDate()
+    : new Date(tweet.createdAt);
+
+  const publishedAt = !Number.isNaN(date.getTime())
+    ? new Intl.DateTimeFormat("es-CO", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(date)
+    : "Fecha pendiente";
 
   return (
     <article className="card border-0 shadow-sm mb-3">

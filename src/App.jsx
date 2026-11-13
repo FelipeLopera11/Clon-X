@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+
 import {
   BrowserRouter,
   Link,
@@ -46,7 +47,9 @@ function PlaceholderPage({ title, description }) {
       <div className="card bg-dark text-white border-secondary">
         <div className="card-body p-4">
           <h1 className="h3">{title}</h1>
-          <p className="text-secondary mb-0">{description}</p>
+          <p className="text-secondary mb-0">
+            {description}
+          </p>
         </div>
       </div>
     </section>
@@ -54,7 +57,11 @@ function PlaceholderPage({ title, description }) {
 }
 
 function PageLayout({ children }) {
-  return <main className="container py-4">{children}</main>;
+  return (
+    <main className="container py-4">
+      {children}
+    </main>
+  );
 }
 
 function AppHeader({ currentUser }) {
@@ -62,7 +69,13 @@ function AppHeader({ currentUser }) {
 
   async function handleLogout() {
     try {
-      await logoutUser();
+      const result = await logoutUser();
+
+      if (result?.success === false) {
+        console.error("Error al cerrar sesión:", result.message);
+        return;
+      }
+
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -72,6 +85,7 @@ function AppHeader({ currentUser }) {
   return (
     <header className="container-fluid bg-dark border-bottom border-secondary py-3">
       <nav className="container d-flex flex-wrap align-items-center justify-content-between gap-3">
+
         <Link
           to="/home"
           className="text-white text-decoration-none fw-bold fs-4"
@@ -80,23 +94,39 @@ function AppHeader({ currentUser }) {
         </Link>
 
         <div className="d-flex flex-wrap align-items-center gap-3">
-          <NavLink to="/home" className="text-white text-decoration-none">
+
+          <NavLink
+            to="/home"
+            className="text-white text-decoration-none"
+          >
             Inicio
           </NavLink>
 
-          <NavLink to="/compose" className="text-white text-decoration-none">
+          <NavLink
+            to="/compose"
+            className="text-white text-decoration-none"
+          >
             Publicar
           </NavLink>
 
-          <NavLink to="/feed" className="text-white text-decoration-none">
+          <NavLink
+            to="/feed"
+            className="text-white text-decoration-none"
+          >
             Feed
           </NavLink>
 
-          <NavLink to="/following" className="text-white text-decoration-none">
+          <NavLink
+            to="/following"
+            className="text-white text-decoration-none"
+          >
             Seguidos
           </NavLink>
 
-          <NavLink to="/followers" className="text-white text-decoration-none">
+          <NavLink
+            to="/followers"
+            className="text-white text-decoration-none"
+          >
             Seguidores
           </NavLink>
 
@@ -111,6 +141,7 @@ function AppHeader({ currentUser }) {
           >
             Cerrar sesión
           </button>
+
         </div>
       </nav>
     </header>
@@ -140,13 +171,20 @@ function AppContent() {
 
   return (
     <div className="container-fluid min-vh-100 bg-black text-white p-0">
-      {currentUser && <AppHeader currentUser={currentUser} />}
+
+      {currentUser && (
+        <AppHeader currentUser={currentUser} />
+      )}
 
       <Routes>
+
         <Route
           path="/"
           element={
-            <Navigate to={currentUser ? "/home" : "/register"} replace />
+            <Navigate
+              to={currentUser ? "/home" : "/register"}
+              replace
+            />
           }
         />
 
@@ -172,7 +210,9 @@ function AppContent() {
           path="/home"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><HomePage /></PageLayout>
+              <PageLayout>
+                <HomePage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -181,7 +221,9 @@ function AppContent() {
           path="/compose"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><ComposePage /></PageLayout>
+              <PageLayout>
+                <ComposePage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -190,7 +232,9 @@ function AppContent() {
           path="/feed"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><FeedPage /></PageLayout>
+              <PageLayout>
+                <FeedPage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -199,7 +243,9 @@ function AppContent() {
           path="/following"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><FollowingPage /></PageLayout>
+              <PageLayout>
+                <FollowingPage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -208,7 +254,9 @@ function AppContent() {
           path="/followers"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><FollowersPage /></PageLayout>
+              <PageLayout>
+                <FollowersPage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -217,7 +265,9 @@ function AppContent() {
           path="/users/:username"
           element={
             <ProtectedRoute currentUser={currentUser}>
-              <PageLayout><UserTweetsPage /></PageLayout>
+              <PageLayout>
+                <UserTweetsPage currentUser={currentUser} />
+              </PageLayout>
             </ProtectedRoute>
           }
         />
@@ -237,6 +287,7 @@ function AppContent() {
             )
           }
         />
+
       </Routes>
     </div>
   );
