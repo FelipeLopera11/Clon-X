@@ -17,6 +17,7 @@ import FeedPage from "./pages/FeedPage";
 import FollowingPage from "./pages/FollowingPage";
 import FollowersPage from "./pages/FollowersPage";
 import UserTweetsPage from "./pages/UserTweetsPage";
+import UserConnectionsPage from "./pages/UserConnectionsPage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 
@@ -132,42 +133,26 @@ function AppHeader({ currentUser }) {
 
         <div className="d-flex flex-wrap align-items-center gap-3">
 
-          <NavLink
-            to="/home"
-            className="text-white text-decoration-none"
-          >
+          <NavLink to="/home" className="text-white text-decoration-none">
             Inicio
           </NavLink>
 
-          <NavLink
-            to="/compose"
-            className="text-white text-decoration-none"
-          >
+          <NavLink to="/compose" className="text-white text-decoration-none">
             Publicar
           </NavLink>
 
-          <NavLink
-            to="/feed"
-            className="text-white text-decoration-none"
-          >
+          <NavLink to="/feed" className="text-white text-decoration-none">
             Feed
           </NavLink>
 
-          <NavLink
-            to="/following"
-            className="text-white text-decoration-none"
-          >
+          <NavLink to="/following" className="text-white text-decoration-none">
             Seguidos
           </NavLink>
 
-          <NavLink
-            to="/followers"
-            className="text-white text-decoration-none"
-          >
+          <NavLink to="/followers" className="text-white text-decoration-none">
             Seguidores
           </NavLink>
 
-          {/* Buscador de usuarios */}
           <form
             onSubmit={handleSearch}
             className="d-flex gap-1"
@@ -342,6 +327,17 @@ function AppContent() {
             <ProtectedRoute currentUser={currentUser}>
               <PageLayout>
                 <UserTweetsPage currentUser={currentUser} />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/users/:username/:type"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <UserConnectionsPage currentUser={currentUser} />
               </PageLayout>
             </ProtectedRoute>
           }
