@@ -1,7 +1,4 @@
 
-/* ==========================================
-   CLON-X | FUTURISTIC NEON INTERFACE
-========================================== */
 
 :root {
   --cx-black: #030508;
@@ -17,7 +14,7 @@
   --cx-glow: 0 0 20px rgba(0, 145, 255, 0.16);
 }
 
-/* GLOBAL */
+
 
 html,
 body,
@@ -47,7 +44,7 @@ body {
   padding: 36px 24px;
 }
 
-/* BACKGROUND EFFECT */
+
 
 main {
   position: relative;
@@ -70,7 +67,7 @@ main::before {
   z-index: -1;
 }
 
-/* TOP NAVIGATION */
+
 
 header.container-fluid.bg-dark {
   position: sticky;
@@ -136,7 +133,7 @@ header nav input {
   min-width: 155px;
 }
 
-/* PANELS AND CARDS */
+
 
 .card,
 .tweet-card,
@@ -170,7 +167,7 @@ header nav input {
   color: var(--cx-white) !important;
 }
 
-/* TWEETS */
+
 
 .tweet-card,
 .post-card {
@@ -190,7 +187,7 @@ header nav input {
   font-size: 0.78rem;
 }
 
-/* PROFILE */
+
 
 .profile-card {
   padding: 30px;
@@ -223,7 +220,7 @@ header nav input {
   color: var(--cx-muted);
 }
 
-/* BUTTONS */
+
 
 .btn {
   border-radius: 10px;
@@ -269,7 +266,7 @@ header nav input {
   border-color: #4b82bd;
 }
 
-/* INPUTS */
+
 
 .form-control,
 .form-select {
@@ -295,7 +292,7 @@ header nav input {
     0 0 18px rgba(0, 145, 255, 0.10) !important;
 }
 
-/* TEXT */
+
 
 h1,
 h2,
@@ -324,7 +321,7 @@ a:hover {
   color: white;
 }
 
-/* ALERTS */
+
 
 .alert {
   background: #0c1728;
@@ -333,14 +330,14 @@ a:hover {
   border-radius: 12px;
 }
 
-/* DIVIDERS */
+
 
 hr {
   border-color: #1c304c;
   opacity: 1;
 }
 
-/* SCROLLBAR */
+
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -359,7 +356,7 @@ hr {
   background: var(--cx-neon);
 }
 
-/* RESPONSIVE */
+
 
 @media (max-width: 768px) {
   .page-container {
