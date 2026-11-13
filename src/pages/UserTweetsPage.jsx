@@ -42,11 +42,8 @@ function UserTweetsPage({ currentUser }) {
         setTweets([]);
         setFollowing(false);
 
-        if (!currentUser?.uid || !username) {
-          return;
-        }
+        if (!currentUser?.uid || !username) return;
 
-        // Buscar el usuario por su nombre
         const foundUser = await searchUserByUsername(username);
 
         if (!active) return;
@@ -58,7 +55,6 @@ function UserTweetsPage({ currentUser }) {
 
         setUser(foundUser);
 
-        // Obtener las publicaciones del usuario
         const tweetsQuery = query(
           collection(db, "tweets"),
           where("authorId", "==", foundUser.uid || foundUser.id)
@@ -73,7 +69,6 @@ function UserTweetsPage({ currentUser }) {
           ...item.data(),
         }));
 
-        // Ordenar por fecha, de más reciente a más antigua
         loadedTweets.sort((a, b) => {
           const dateA = a.createdAt?.toMillis?.() || 0;
           const dateB = b.createdAt?.toMillis?.() || 0;
@@ -83,7 +78,6 @@ function UserTweetsPage({ currentUser }) {
         setTweets(loadedTweets);
         setCurrentPage(1);
 
-        // Comprobar si la cuenta actual sigue a este usuario
         if (foundUser.id !== currentUser.uid) {
           const result = await isFollowing(
             currentUser.uid,
@@ -107,9 +101,7 @@ function UserTweetsPage({ currentUser }) {
           );
         }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
 
@@ -164,9 +156,7 @@ function UserTweetsPage({ currentUser }) {
   );
 
   if (loading) {
-    return (
-      <p className="text-secondary">Cargando perfil...</p>
-    );
+    return <p className="text-secondary">Cargando perfil...</p>;
   }
 
   if (error && !user) {
@@ -202,15 +192,21 @@ function UserTweetsPage({ currentUser }) {
               </p>
 
               <div className="d-flex flex-wrap gap-4">
-                <span>
+                <Link
+                  to={`/users/${user.username}/followers`}
+                  className="text-decoration-none text-reset"
+                >
                   <strong>{user.followersCount || 0}</strong>{" "}
                   seguidores
-                </span>
+                </Link>
 
-                <span>
+                <Link
+                  to={`/users/${user.username}/following`}
+                  className="text-decoration-none text-reset"
+                >
                   <strong>{user.followingCount || 0}</strong>{" "}
                   siguiendo
-                </span>
+                </Link>
               </div>
             </div>
 
@@ -250,6 +246,7 @@ function UserTweetsPage({ currentUser }) {
             key={tweet.id}
             tweet={tweet}
             user={user}
+            currentUser={currentUser}
           />
         ))
       ) : (
