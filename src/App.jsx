@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -6,137 +7,273 @@ import {
   NavLink,
   Route,
   Routes,
+  useNavigate,
 } from "react-router";
+
+import HomePage from "./pages/HomePage";
 import ComposePage from "./pages/ComposePage";
 import FeedPage from "./pages/FeedPage";
-import FollowersPage from "./pages/FollowersPage";
 import FollowingPage from "./pages/FollowingPage";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+import FollowersPage from "./pages/FollowersPage";
 import UserTweetsPage from "./pages/UserTweetsPage";
+import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
 
+import {
+  getCurrentUser,
+  logoutUser,
+} from "./auth";
+
+// Ruta para usuarios que no han iniciado sesión
+function GuestRoute({ currentUser, children }) {
+  if (currentUser) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+}
+
+// Ruta para usuarios autenticados
+function ProtectedRoute({ currentUser, children }) {
+  if (!currentUser) {
+    return <Navigate to="/register" replace />;
+  }
+
+  return children;
+}
+
+// Página provisional
 function PlaceholderPage({ title, description }) {
   return (
-    <section className="card bg-dark text-white border-secondary rounded-4">
-      <div className="card-body p-4">
-        <span className="badge text-bg-primary mb-3">
-          Milestone 1
-        </span>
-        <h1 className="h3">{title}</h1>
-        <p>{description}</p>
+    <section className="container py-5">
+      <div className="card bg-dark text-white border-secondary">
+        <div className="card-body p-4">
+          <h1 className="h3">{title}</h1>
+          <p className="text-secondary mb-0">{description}</p>
+        </div>
       </div>
     </section>
   );
 }
 
+// Diseño de las páginas
 function PageLayout({ children }) {
   return (
-    <main className="container-fluid px-0 py-4">
-      <div className="mx-auto px-3" style={{ maxWidth: "720px" }}>
-        {children}
-      </div>
+    <main className="container py-4">
+      {children}
     </main>
   );
 }
 
-function AppHeader() {
-  const navLinkClass = ({ isActive }) =>
-    `nav-link rounded-pill px-3 ${
-      isActive ? "active bg-secondary text-white" : "text-white-50"
-    }`;
+// Encabezado de la aplicación
+function AppHeader({ currentUser }) {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logoutUser();
+    navigate("/register");
+  }
 
   return (
-    <header className="navbar navbar-expand bg-black border-bottom border-secondary px-3 py-3">
-      <div className="container-fluid flex-wrap gap-3">
+    <header className="container-fluid bg-dark border-bottom border-secondary py-3">
+      <nav className="container d-flex flex-wrap align-items-center justify-content-between gap-3">
         <Link
-          className="navbar-brand text-white fw-bold me-2"
           to="/home"
+          className="text-white text-decoration-none fw-bold fs-4"
         >
-          <span className="border border-2 rounded-circle px-2 py-1 me-2">
-            X
-          </span>
           Clon-X
         </Link>
 
-        <nav
-          className="navbar-nav flex-row flex-wrap gap-1"
-          aria-label="Navegación principal"
-        >
-          <NavLink className={navLinkClass} to="/home">
+        <div className="d-flex flex-wrap align-items-center gap-3">
+          <NavLink to="/home" className="text-white text-decoration-none">
             Inicio
           </NavLink>
-          <NavLink className={navLinkClass} to="/feed">
+
+          <NavLink to="/compose" className="text-white text-decoration-none">
+            Publicar
+          </NavLink>
+
+          <NavLink to="/feed" className="text-white text-decoration-none">
             Feed
           </NavLink>
-          <NavLink className={navLinkClass} to="/following">
+
+          <NavLink to="/following" className="text-white text-decoration-none">
             Seguidos
           </NavLink>
-          <NavLink className={navLinkClass} to="/followers">
+
+          <NavLink to="/followers" className="text-white text-decoration-none">
             Seguidores
           </NavLink>
-        </nav>
 
-        <div className="d-flex align-items-center gap-3">
-          <span className="small fw-bold text-white">@Felipe</span>
-          <Link className="small text-white-50" to="/login">
+          <span className="text-info">
+            @{currentUser.username}
+          </span>
+
+          <button
+            className="btn btn-outline-light btn-sm"
+            type="button"
+            onClick={handleLogout}
+          >
             Cerrar sesión
-          </Link>
+          </button>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }
 
-function App() {
+// Contenido principal y rutas
+function AppContent() {
+  const [currentUser, setCurrentUser] = useState(getCurrentUser);
+
+  useEffect(() => {
+    function updateUser() {
+      setCurrentUser(getCurrentUser());
+    }
+
+    window.addEventListener("clonx-auth-change", updateUser);
+
+    return () => {
+      window.removeEventListener("clonx-auth-change", updateUser);
+    };
+  }, []);
+
   return (
-    <BrowserRouter>
-      <div className="container-fluid min-vh-100 bg-black text-white p-0">
-        <AppHeader />
+    <div className="container-fluid min-vh-100 bg-black text-white p-0">
 
-        <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+      {currentUser && (
+        <AppHeader currentUser={currentUser} />
+      )}
 
-          <Route
-            path="/home"
-            element={<PageLayout><HomePage /></PageLayout>}
-          />
-          <Route
-            path="/compose"
-            element={<PageLayout><ComposePage /></PageLayout>}
-          />
-          <Route
-            path="/feed"
-            element={<PageLayout><FeedPage /></PageLayout>}
-          />
-          <Route
-            path="/following"
-            element={<PageLayout><FollowingPage /></PageLayout>}
-          />
-          <Route
-            path="/followers"
-            element={<PageLayout><FollowersPage /></PageLayout>}
-          />
-          <Route
-            path="/users/:username"
-            element={<PageLayout><UserTweetsPage /></PageLayout>}
-          />
+      <Routes>
+        {/* Ruta principal */}
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to={currentUser ? "/home" : "/register"}
+              replace
+            />
+          }
+        />
 
-          <Route
-            path="*"
-            element={
+        {/* Registro */}
+        <Route
+          path="/register"
+          element={
+            <GuestRoute currentUser={currentUser}>
+              <RegisterPage />
+            </GuestRoute>
+          }
+        />
+
+        {/* Inicio de sesión */}
+        <Route
+          path="/login"
+          element={
+            <GuestRoute currentUser={currentUser}>
+              <LoginPage />
+            </GuestRoute>
+          }
+        />
+
+        {/* Inicio */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <HomePage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Publicar */}
+        <Route
+          path="/compose"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <ComposePage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Feed */}
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <FeedPage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Seguidos */}
+        <Route
+          path="/following"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <FollowingPage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Seguidores */}
+        <Route
+          path="/followers"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <FollowersPage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Tweets de un usuario */}
+        <Route
+          path="/users/:username"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <PageLayout>
+                <UserTweetsPage />
+              </PageLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Página no encontrada */}
+        <Route
+          path="*"
+          element={
+            currentUser ? (
               <PageLayout>
                 <PlaceholderPage
                   title="Página no encontrada"
                   description="Usa el menú para volver a una sección del proyecto."
                 />
               </PageLayout>
-            }
-          />
-        </Routes>
-      </div>
+            ) : (
+              <Navigate to="/register" replace />
+            )
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

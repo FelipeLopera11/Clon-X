@@ -1,8 +1,29 @@
-import { Link } from "react-router";
+
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { loginUser } from "../auth";
 
 function LoginPage() {
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+
   function handleSubmit(event) {
     event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    const username = formData.get("username");
+    const password = formData.get("password");
+
+    const result = loginUser(username, password);
+
+    if (!result.success) {
+      setError(result.message);
+      return;
+    }
+
+    setError("");
+    navigate("/home");
   }
 
   return (
@@ -15,7 +36,9 @@ function LoginPage() {
                 <span className="badge rounded-pill text-bg-primary mb-3">
                   Clon de X
                 </span>
+
                 <h1 className="h3 mb-2">Iniciar sesión</h1>
+
                 <p className="text-secondary mb-0">
                   Vuelve a conectarte con la comunidad.
                 </p>
@@ -26,6 +49,7 @@ function LoginPage() {
                   <label className="form-label" htmlFor="username">
                     Nombre de usuario
                   </label>
+
                   <input
                     className="form-control"
                     id="username"
@@ -41,6 +65,7 @@ function LoginPage() {
                   <label className="form-label" htmlFor="password">
                     Contraseña
                   </label>
+
                   <input
                     className="form-control"
                     id="password"
@@ -52,6 +77,12 @@ function LoginPage() {
                   />
                 </div>
 
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
+                  </div>
+                )}
+
                 <button className="btn btn-primary w-100" type="submit">
                   Iniciar sesión
                 </button>
@@ -59,13 +90,16 @@ function LoginPage() {
 
               <div className="d-flex align-items-center gap-3 my-4">
                 <hr className="flex-grow-1" />
-                <span className="small text-secondary">o continúa con</span>
+                <span className="small text-secondary">
+                  o continúa con
+                </span>
                 <hr className="flex-grow-1" />
               </div>
 
               <button
                 className="btn btn-outline-secondary w-100"
                 type="button"
+                disabled
               >
                 Continuar con Google
               </button>
