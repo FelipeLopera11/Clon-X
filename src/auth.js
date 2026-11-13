@@ -1,3 +1,4 @@
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -16,7 +17,7 @@ import {
 
 import { auth, db, googleProvider } from "./firebase";
 
-function normalizeUsername(username) {
+function normalizeUsername(username = "") {
   return username.trim().replace(/^@/, "").toLowerCase();
 }
 
@@ -41,7 +42,10 @@ export async function registerUser(userData) {
     const username = normalizeUsername(userData.username);
 
     if (!username) {
-      return { success: false, message: "Escribe un nombre de usuario." };
+      return {
+        success: false,
+        message: "Escribe un nombre de usuario.",
+      };
     }
 
     credential = await createUserWithEmailAndPassword(
@@ -88,7 +92,7 @@ export async function registerUser(userData) {
       try {
         await deleteUser(credential.user);
       } catch (deleteError) {
-        console.error(deleteError);
+        console.error("Error al eliminar cuenta incompleta:", deleteError);
       }
     }
 
@@ -102,6 +106,13 @@ export async function registerUser(userData) {
 export async function loginUser(username, password) {
   try {
     const normalizedUsername = normalizeUsername(username);
+
+    if (!normalizedUsername) {
+      return {
+        success: false,
+        message: "Escribe tu nombre de usuario.",
+      };
+    }
 
     const usernameRef = doc(db, "usernames", normalizedUsername);
     const usernameSnapshot = await getDoc(usernameRef);
@@ -206,6 +217,8 @@ export function subscribeToAuthChanges(callback) {
           email: user.email,
           photoURL: user.photoURL || "",
           username: user.email?.split("@")[0] || "usuario",
+          followersCount: 0,
+          followingCount: 0,
         });
       }
     } catch (error) {
@@ -218,6 +231,7 @@ export function subscribeToAuthChanges(callback) {
 export async function logoutUser() {
   try {
     await signOut(auth);
+
     return { success: true };
   } catch (error) {
     return {
